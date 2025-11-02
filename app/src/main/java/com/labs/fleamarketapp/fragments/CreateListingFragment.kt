@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
@@ -26,7 +25,7 @@ class CreateListingFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val itemViewModel: ItemViewModel by viewModels()
-    private val userViewModel: UserViewModel by activityViewModels()
+    private val userViewModel: UserViewModel by viewModels()
     
     private val categories = arrayOf("Electronics", "Books", "Clothing", "Jewellery", "Other")
     
