@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.labs.fleamarketapp.fragments.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_listings"
+        android:name="com.labs.fleamarketapp.fragments.ListingsFragment"
+        android:label="My Listings"
+        tools:layout="@layout/fragment_listings" />
+
+    <fragment
+        android:id="@+id/nav_notifications"
+        android:name="com.labs.fleamarketapp.fragments.NotificationsFragment"
+        android:label="Notifications"
+        tools:layout="@layout/fragment_notifications" />
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.labs.fleamarketapp.fragments.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/nav_item_detail"
+        android:name="com.labs.fleamarketapp.fragments.ItemDetailFragment"
+        android:label="Item Details"
+        tools:layout="@layout/fragment_item_detail">
+        <argument
+            android:name="itemId"
+            app:argType="string" />
+    </fragment>
+    
+    <action
+        android:id="@+id/action_nav_home_to_nav_item_detail"
+        app:destination="@id/nav_item_detail" />
+    
+    <action
+        android:id="@+id/action_nav_listings_to_nav_item_detail"
+        app:destination="@id/nav_item_detail" />
+
+    <fragment
+        android:id="@+id/nav_create_listing"
+        android:name="com.labs.fleamarketapp.fragments.CreateListingFragment"
+        android:label="Create Listing"
+        tools:layout="@layout/fragment_create_listing" />
+
+</navigation>
+
