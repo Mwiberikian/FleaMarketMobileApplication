@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "657377698471",
+    "project_id": "strathmore-fleamarket",
+    "storage_bucket": "strathmore-fleamarket.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657377698471:android:e006f9224edee80ee47182",
+        "android_client_info": {
+          "package_name": "com.labs.fleamarketapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMVPYj507lSQoOnwWT0R-sBQp1164Rd7A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

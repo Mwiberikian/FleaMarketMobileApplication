@@ -70,6 +70,10 @@ class LoginActivity : AppCompatActivity() {
                 validateEmail(binding.emailEditText.text.toString().trim())
             }
         }
+        
+        binding.signupLink.setOnClickListener {
+            startActivity(Intent(this@LoginActivity, SignupActivity::class.java))
+        }
     }
     
     private fun validateInput(email: String, password: String): Boolean {

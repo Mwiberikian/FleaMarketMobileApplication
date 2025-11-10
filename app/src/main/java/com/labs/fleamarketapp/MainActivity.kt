@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         user?.let {
             // Initialize the ViewModel with user data
             userViewModel.setUser(it)
-        }
+}
     }
     
     private fun setupBottomNavigation() {
@@ -46,6 +46,6 @@ class MainActivity : AppCompatActivity() {
         navHostFragment?.let {
             val navController = it.navController
             binding.bottomNavigation.setupWithNavController(navController)
-        }
     }
+}
 }
