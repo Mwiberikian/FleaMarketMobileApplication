@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.observe
 import com.bumptech.glide.Glide
@@ -23,7 +24,7 @@ class ItemDetailFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val auctionViewModel: AuctionViewModel by viewModels()
-    private val userViewModel: UserViewModel by viewModels()
+    private val userViewModel: UserViewModel by activityViewModels()
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -124,11 +125,15 @@ class ItemDetailFragment : Fragment() {
             if (bidAmount != null && bidAmount > 0) {
                 val itemId = arguments?.getString("itemId") ?: return@setOnClickListener
                 val user = userViewModel.currentUser.value ?: return@setOnClickListener
-                
+                val token = userViewModel.authToken.value
+                if (token.isNullOrBlank()) {
+                    Toast.makeText(requireContext(), "Authentication required. Please log in again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
                 auctionViewModel.placeBid(
+                    token = token,
                     itemId = itemId,
                     bidderId = user.id,
-                    bidderName = user.name,
                     amount = bidAmount
                 )
             } else {

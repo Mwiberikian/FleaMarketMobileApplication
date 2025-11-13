@@ -19,9 +19,13 @@ import kotlinx.coroutines.launch
         BidEntity::class,
         OrderEntity::class,
         CategoryEntity::class,
-        NotificationEntity::class
+        NotificationEntity::class,
+        com.labs.fleamarketapp.local.entities.LocalItem::class,
+        com.labs.fleamarketapp.local.entities.DraftBid::class,
+        com.labs.fleamarketapp.local.entities.UserPreferences::class,
+        com.labs.fleamarketapp.local.entities.CartItem::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -32,6 +36,10 @@ abstract class MarketplaceDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun categoryDao(): CategoryDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun localItemDao(): com.labs.fleamarketapp.local.dao.LocalItemDao
+    abstract fun draftBidDao(): com.labs.fleamarketapp.local.dao.DraftBidDao
+    abstract fun userPreferencesDao(): com.labs.fleamarketapp.local.dao.UserPreferencesDao
+    abstract fun cartDao(): com.labs.fleamarketapp.local.dao.CartDao
 
     companion object {
         @Volatile private var INSTANCE: MarketplaceDatabase? = null

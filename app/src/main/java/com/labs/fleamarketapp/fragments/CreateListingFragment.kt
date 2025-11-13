@@ -9,14 +9,11 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.labs.fleamarketapp.R
-import com.labs.fleamarketapp.data.Item
-import com.labs.fleamarketapp.data.ItemStatus
 import com.labs.fleamarketapp.data.UiState
 import com.labs.fleamarketapp.databinding.FragmentCreateListingBinding
 import com.labs.fleamarketapp.viewmodel.ItemViewModel
@@ -27,10 +24,17 @@ class CreateListingFragment : Fragment() {
     private var _binding: FragmentCreateListingBinding? = null
     private val binding get() = _binding!!
     
-    private val itemViewModel: ItemViewModel by viewModels()
-    private val userViewModel: UserViewModel by viewModels()
+    private val itemViewModel: ItemViewModel by activityViewModels()
+    private val userViewModel: UserViewModel by activityViewModels()
     
     private val categories = arrayOf("Electronics", "Books", "Clothing", "Jewellery", "Other")
+    private val categoryNameToId = mapOf(
+        "Electronics" to 1L,
+        "Books" to 2L,
+        "Clothing" to 3L,
+        "Jewellery" to 4L,
+        "Other" to null
+    )
     
     private var selectedImageUri: Uri? = null
     
@@ -104,15 +108,18 @@ class CreateListingFragment : Fragment() {
         
         binding.createButton.setOnClickListener {
             if (validateInput()) {
-                val user = userViewModel.currentUser.value ?: return@setOnClickListener
+                if (userViewModel.currentUser.value == null) {
+                    Toast.makeText(requireContext(), "Authentication required. Please log in again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
                 
                 val isAuction = binding.auctionCheckBox.isChecked
                 val isFixedPrice = binding.fixedPriceCheckBox.isChecked
                 
-                val price = if (isFixedPrice) {
-                    binding.priceEditText.text.toString().toDoubleOrNull() ?: 0.0
+                val priceValue = if (isFixedPrice) {
+                    binding.priceEditText.text.toString().toDoubleOrNull()
                 } else {
-                    0.0
+                    null
                 }
                 
                 val startingBid = if (isAuction) {
@@ -133,25 +140,30 @@ class CreateListingFragment : Fragment() {
                     null
                 }
                 
-                val imageUrl = selectedImageUri?.toString() // In real app, upload to server and get URL
+                val token = userViewModel.authToken.value
+                if (token.isNullOrBlank()) {
+                    Toast.makeText(requireContext(), "Authentication required. Please log in again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
                 
-                val item = Item(
-                    id = "",
+                val imageList = selectedImageUri?.let { listOf(it.toString()) } ?: emptyList()
+                val categoryName = binding.categoryAutoComplete.text.toString().trim()
+                val categoryId = categoryNameToId[categoryName]
+                val itemType = if (isAuction) "AUCTION" else "FIXED_PRICE"
+                val condition = "GOOD" // TODO: capture from UI when available
+                
+                itemViewModel.createItem(
+                    token = token,
                     title = binding.titleEditText.text.toString().trim(),
                     description = binding.descriptionEditText.text.toString().trim(),
-                    price = price,
-                    imageUrl = imageUrl,
-                    category = binding.categoryAutoComplete.text.toString().trim(),
-                    sellerId = user.id,
-                    sellerName = user.name,
-                    createdAt = System.currentTimeMillis(),
-                    status = ItemStatus.AVAILABLE,
-                    isAuction = isAuction,
-                    auctionEndTime = auctionEndTime,
-                    currentBid = startingBid
+                    price = priceValue,
+                    startingBid = startingBid,
+                    condition = condition,
+                    itemType = itemType,
+                    images = imageList,
+                    categoryId = categoryId,
+                    auctionEndTime = auctionEndTime
                 )
-                
-                itemViewModel.createItem(item)
             }
         }
     }

@@ -23,7 +23,9 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     
-    private val viewModel: ItemViewModel by viewModels()
+    private val viewModel: ItemViewModel by viewModels {
+        androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+    }
     private lateinit var itemAdapter: ItemAdapter
     private lateinit var categoryAdapter: CategoryAdapter
     

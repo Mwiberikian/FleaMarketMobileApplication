@@ -11,7 +11,8 @@ data class User(
     val phone: String? = null,
     val profileImageUrl: String? = null,
     val rating: Float = 0f,
-    val userType: UserType = UserType.BUYER
+    val userType: UserType = UserType.BUYER,
+    val authToken: String? = null
 ) : Parcelable
 
 enum class UserType {

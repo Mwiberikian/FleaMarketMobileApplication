@@ -83,10 +83,68 @@ interface OrderDao {
 interface NotificationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(notification: NotificationEntity)
-
+    
     @Query("SELECT * FROM notifications WHERE userId = :userId ORDER BY timestamp DESC")
     fun getForUser(userId: String): Flow<List<NotificationEntity>>
-
+    
     @Query("UPDATE notifications SET isRead = 1 WHERE id = :id")
     suspend fun markAsRead(id: String)
+}
+
+// Local entities DAOs for user-specific data
+@Dao
+interface LocalItemDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: com.labs.fleamarketapp.local.entities.LocalItem)
+    
+    @Query("SELECT * FROM local_items WHERE userId = :userId ORDER BY lastModified DESC")
+    fun getDraftsForUser(userId: String): Flow<List<com.labs.fleamarketapp.local.entities.LocalItem>>
+    
+    @Query("SELECT * FROM local_items WHERE id = :id")
+    suspend fun getById(id: String): com.labs.fleamarketapp.local.entities.LocalItem?
+    
+    @Delete
+    suspend fun delete(item: com.labs.fleamarketapp.local.entities.LocalItem)
+    
+    @Query("DELETE FROM local_items WHERE userId = :userId AND isDraft = 0")
+    suspend fun clearSyncedItems(userId: String)
+}
+
+@Dao
+interface DraftBidDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(bid: com.labs.fleamarketapp.local.entities.DraftBid)
+    
+    @Query("SELECT * FROM draft_bids WHERE userId = :userId AND synced = 0")
+    fun getUnsyncedBids(userId: String): Flow<List<com.labs.fleamarketapp.local.entities.DraftBid>>
+    
+    @Query("UPDATE draft_bids SET synced = 1 WHERE id = :id")
+    suspend fun markAsSynced(id: String)
+    
+    @Delete
+    suspend fun delete(bid: com.labs.fleamarketapp.local.entities.DraftBid)
+}
+
+@Dao
+interface UserPreferencesDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(prefs: com.labs.fleamarketapp.local.entities.UserPreferences)
+    
+    @Query("SELECT * FROM user_preferences WHERE userId = :userId")
+    suspend fun getForUser(userId: String): com.labs.fleamarketapp.local.entities.UserPreferences?
+}
+
+@Dao
+interface CartDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: com.labs.fleamarketapp.local.entities.CartItem)
+    
+    @Query("SELECT * FROM shopping_cart WHERE userId = :userId")
+    fun getCartForUser(userId: String): Flow<List<com.labs.fleamarketapp.local.entities.CartItem>>
+    
+    @Delete
+    suspend fun delete(item: com.labs.fleamarketapp.local.entities.CartItem)
+    
+    @Query("DELETE FROM shopping_cart WHERE userId = :userId")
+    suspend fun clearCart(userId: String)
 }

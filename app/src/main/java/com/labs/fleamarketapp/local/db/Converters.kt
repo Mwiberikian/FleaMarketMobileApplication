@@ -14,7 +14,16 @@ class Converters {
     @TypeConverter
     fun toStringList(value: String?): List<String> = value?.let {
         val type = object : TypeToken<List<String>>() {}.type
-        gson.fromJson(it, type)
+        gson.fromJson<List<String>>(it, type)
+    } ?: emptyList()
+
+    @TypeConverter
+    fun fromLongList(value: List<Long>?): String? = value?.let { gson.toJson(it) }
+
+    @TypeConverter
+    fun toLongList(value: String?): List<Long> = value?.let {
+        val type = object : TypeToken<List<Long>>() {}.type
+        gson.fromJson<List<Long>>(it, type)
     } ?: emptyList()
 
     @TypeConverter fun fromUserRole(value: UserRole?): String? = value?.name
