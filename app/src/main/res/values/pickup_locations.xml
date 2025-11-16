@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pickup_location_options">
+        <item>STC</item>
+        <item>Phase1 Gazebos</item>
+        <item>Phase2 Gazebos</item>
+        <item>Parking Lot</item>
+    </string-array>
+</resources>
+

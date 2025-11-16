@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_md"
+    android:padding="@dimen/space_md"
+    app:cardCornerRadius="@dimen/corner_medium"
+    app:cardUseCompatPadding="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View
+            android:id="@+id/readIndicator"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:background="@drawable/notification_indicator_bg"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/typeIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="@dimen/space_md"
+            android:background="@drawable/notification_icon_bg"
+            android:padding="@dimen/space_xs"
+            app:layout_constraintStart_toEndOf="@id/readIndicator"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/typeLabel"
+            style="@style/TextAppearance.FleaMarket.Subtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_md"
+            android:text="New Bid"
+            app:layout_constraintStart_toEndOf="@id/typeIcon"
+            app:layout_constraintTop_toTopOf="@id/typeIcon"
+            app:layout_constraintEnd_toStartOf="@id/timeLabel" />
+
+        <TextView
+            android:id="@+id/timeLabel"
+            style="@style/TextAppearance.FleaMarket.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2h ago"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/typeIcon" />
+
+        <TextView
+            android:id="@+id/titleText"
+            style="@style/TextAppearance.FleaMarket.Title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:text="Vintage Lamp received a new bid"
+            app:layout_constraintStart_toStartOf="@id/typeLabel"
+            app:layout_constraintTop_toBottomOf="@id/typeLabel"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/messageText"
+            style="@style/TextAppearance.FleaMarket.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="Samuel placed KES 4,500 on your listing."
+            app:layout_constraintStart_toStartOf="@id/titleText"
+            app:layout_constraintTop_toBottomOf="@id/titleText"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/actionRow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:gravity="end"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/messageText"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/markReadButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/notification_mark_read" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/viewButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/notification_view_item"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
+

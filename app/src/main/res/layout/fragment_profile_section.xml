@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="@dimen/space_md">
+
+    <TextView
+        android:id="@+id/sectionTitle"
+        style="@style/TextAppearance.FleaMarket.Title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Section" />
+
+    <TextView
+        android:id="@+id/sectionSubtitle"
+        style="@style/TextAppearance.FleaMarket.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:text="Content coming soon." />
+
+</LinearLayout>
+

@@ -236,6 +236,8 @@
 
                     <TextView
                         style="@style/TextAppearance.FleaMarket.Subtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:text="@string/label_choose_role" />
 
                     <RadioGroup

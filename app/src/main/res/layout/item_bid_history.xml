@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_sm"
+    app:cardCornerRadius="@dimen/corner_small"
+    app:cardElevation="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/space_sm">
+
+        <TextView
+            android:id="@+id/bidderName"
+            style="@style/TextAppearance.FleaMarket.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Bidder Name"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/bidAmount"
+            app:layout_constraintHorizontal_bias="0" />
+
+        <TextView
+            android:id="@+id/bidAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="KSh 0"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/bidTime"
+            style="@style/TextAppearance.FleaMarket.Caption"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="2 min ago"
+            app:layout_constraintStart_toStartOf="@id/bidderName"
+            app:layout_constraintTop_toBottomOf="@id/bidderName"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
+
