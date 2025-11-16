@@ -1,3 +1,5 @@
+// HomeFragment with added comments
+
 package com.labs.fleamarketapp.fragments
 
 import android.content.Intent
@@ -33,22 +35,22 @@ import java.util.UUID
 
 class HomeFragment : Fragment() {
 
-    private var _binding: FragmentHomeBinding? = null
-    private val binding get() = _binding!!
+    private var _binding: FragmentHomeBinding? = null // holds layout binding
+    private val binding get() = _binding!! // safe access to binding
 
-    private val viewModel: ItemViewModel by viewModels {
+    private val viewModel: ItemViewModel by viewModels { // creates ItemViewModel for fetching items
         androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
     }
 
-    private val userViewModel: UserViewModel by activityViewModels()
+    private val userViewModel: UserViewModel by activityViewModels() // shared user state across activity
 
-    private lateinit var categoryAdapter: CategoryAdapter
-    private val featuredAdapter = FeaturedListingAdapter(::openItemDetails)
+    private lateinit var categoryAdapter: CategoryAdapter // adapter for category grid
+    private val featuredAdapter = FeaturedListingAdapter(::openItemDetails) // adapter for featured items
 
-    private var featuredItems: List<Item> = emptyList()
-    private var selectedCategory = "All"
+    private var featuredItems: List<Item> = emptyList() // stores loaded featured items
+    private var selectedCategory = "All" // tracks selected category
 
-    private val categories = listOf(
+    private val categories = listOf( // static list of homepage categories
         HomeCategory("All", "Everything new on campus"),
         HomeCategory("Books", "Texts & notes"),
         HomeCategory("Electronics", "Phones & laptops"),
@@ -64,55 +66,55 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        _binding = FragmentHomeBinding.inflate(inflater, container, false) // inflate layout
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupBanner()
-        setupSearch()
-        setupRecyclerViews()
-        bindCategories()
-        setupObservers()
-        setupLoginCta()
-        viewModel.loadFeaturedItems()
+        setupBanner() // banner buttons + asset images
+        setupSearch() // search bar functionality
+        setupRecyclerViews() // setup both recyclers
+        bindCategories() // display categories in grid
+        setupObservers() // observe ViewModel states
+        setupLoginCta() // handle login button
+        viewModel.loadFeaturedItems() // load items from backend
     }
 
     private fun setupBanner() {
         binding.createListingButton.setOnClickListener {
-            handleRestrictedAction {
+            handleRestrictedAction { // only logged-in users can access
                 findNavController().navigate(R.id.nav_create_listing)
             }
         }
 
         binding.shopButton.setOnClickListener {
-            handleRestrictedAction {
+            handleRestrictedAction { // enforce login
                 findNavController().navigate(R.id.nav_listings)
             }
         }
 
-        // Load banner and why-use images from assets, matching view IDs to asset filenames
+        // Load banner and why-use images from assets
         loadAssetImage(binding.bannerImage, "bannerImage.png")
         loadAssetImage(binding.whyImageTop, "whyImageTop.png")
         loadAssetImage(binding.whyImageBottom, "whyImageBottom.png")
     }
 
     private fun setupSearch() {
-        binding.searchEditText.doAfterTextChanged {
+        binding.searchEditText.doAfterTextChanged { // live search
             applyFilters()
         }
-        binding.searchGoButton.setOnClickListener {
+        binding.searchGoButton.setOnClickListener { // manual search button
             applyFilters()
         }
     }
 
     private fun setupRecyclerViews() {
-        binding.categoriesRecycler.apply {
+        binding.categoriesRecycler.apply { // categories grid
             layoutManager = GridLayoutManager(context, 2)
             isNestedScrollingEnabled = false
         }
-        binding.featuredRecycler.apply {
+        binding.featuredRecycler.apply { // horizontal featured items
             layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
             adapter = featuredAdapter
         }
@@ -120,8 +122,8 @@ class HomeFragment : Fragment() {
 
     private fun bindCategories() {
         categoryAdapter = CategoryAdapter(categories) { category ->
-            selectedCategory = category.title
-            applyFilters()
+            selectedCategory = category.title // update selected category
+            applyFilters() // re-filter items
         }
         binding.categoriesRecycler.adapter = categoryAdapter
     }
@@ -129,16 +131,16 @@ class HomeFragment : Fragment() {
     private fun setupObservers() {
         viewModel.featuredItemsState.observe(viewLifecycleOwner) { state ->
             when (state) {
-                is UiState.Loading -> {
+                is UiState.Loading -> { // loading state
                     binding.progressBar.isVisible = true
                     binding.errorText.isVisible = false
                 }
-                is UiState.Success -> {
+                is UiState.Success -> { // success state
                     binding.progressBar.isVisible = false
                     binding.errorText.isVisible = false
-                    updateListings(state.data)
+                    updateListings(state.data) // update UI
                 }
-                is UiState.Error -> {
+                is UiState.Error -> { // error state
                     binding.progressBar.isVisible = false
                     binding.errorText.isVisible = true
                     binding.errorText.text = state.message
@@ -148,27 +150,25 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupLoginCta() {
-        binding.loginButton.setOnClickListener {
+        binding.loginButton.setOnClickListener { // open login page
             startActivity(Intent(requireContext(), LoginActivity::class.java))
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 userViewModel.currentUser.collect { user ->
-                    binding.loginButton.isVisible = user == null
+                    binding.loginButton.isVisible = user == null // hide login if logged in
                 }
             }
         }
     }
 
-    // Removed sample data population to avoid showing mock listings
-
-    private fun updateListings(items: List<Item>) {
-        featuredItems = items.sortedByDescending { it.createdAt }.take(6)
+    private fun updateListings(items: List<Item>) { // process featured items
+        featuredItems = items.sortedByDescending { it.createdAt }.take(6) // newest 6
         applyFilters()
     }
 
-    private fun applyFilters() {
+    private fun applyFilters() { // search + category filtering
         val query = binding.searchEditText.text?.toString()?.trim().orEmpty()
         val filtered = featuredItems.filter { item ->
             val matchesCategory = when {
@@ -181,18 +181,18 @@ class HomeFragment : Fragment() {
                     item.description.contains(query, true)
             matchesCategory && matchesQuery
         }
-        featuredAdapter.submitList(filtered)
-        binding.emptyStateText.isVisible = filtered.isEmpty()
+        featuredAdapter.submitList(filtered) // update recycler
+        binding.emptyStateText.isVisible = filtered.isEmpty() // show empty message
     }
 
-    private fun openItemDetails(item: Item) {
+    private fun openItemDetails(item: Item) { // open details page
         handleRestrictedAction {
             val bundle = Bundle().apply { putString("itemId", item.id) }
             findNavController().navigate(R.id.nav_item_detail, bundle)
         }
     }
 
-    private fun loadAssetImage(view: android.widget.ImageView, fileName: String) {
+    private fun loadAssetImage(view: android.widget.ImageView, fileName: String) { // load images from assets
         val ctx = view.context
         val assetToUse = when {
             assetExists(ctx, fileName) -> fileName
@@ -200,7 +200,6 @@ class HomeFragment : Fragment() {
             else -> null
         }
         if (assetToUse == null) {
-            // Show a subtle placeholder if asset isn't found
             Glide.with(ctx)
                 .load(R.drawable.ic_launcher_foreground)
                 .into(view)
@@ -212,7 +211,7 @@ class HomeFragment : Fragment() {
             .into(view)
     }
 
-    private fun assetExists(context: android.content.Context, name: String): Boolean {
+    private fun assetExists(context: android.content.Context, name: String): Boolean { // checks if file exists
         return try {
             context.assets.open(name).close()
             true
@@ -221,7 +220,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun handleRestrictedAction(action: () -> Unit) {
+    private fun handleRestrictedAction(action: () -> Unit) { // require login
         val user = userViewModel.currentUser.value
         if (user == null) {
             startActivity(Intent(requireContext(), LoginActivity::class.java))
@@ -232,11 +231,11 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        _binding = null // avoid memory leaks
     }
 
     companion object {
-        private val SAMPLE_IMAGES = listOf(
+        private val SAMPLE_IMAGES = listOf( // sample image URLs
             "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
             "https://images.unsplash.com/photo-1523475472560-d2df97ec485c",
             "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
