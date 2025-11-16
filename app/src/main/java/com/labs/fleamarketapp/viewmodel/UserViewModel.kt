@@ -1,8 +1,10 @@
 package com.labs.fleamarketapp.viewmodel
 
+import android.app.Application
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.labs.fleamarketapp.api.ApiClient
 import com.labs.fleamarketapp.api.models.LoginRequest
@@ -10,15 +12,18 @@ import com.labs.fleamarketapp.api.models.RegisterRequest
 import com.labs.fleamarketapp.data.UiState
 import com.labs.fleamarketapp.data.User
 import com.labs.fleamarketapp.data.UserType
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class UserViewModel : ViewModel() {
+class UserViewModel(application: Application) : AndroidViewModel(application) {
     
     private val api = ApiClient.api
+    private val prefs = application.getSharedPreferences("auth", Context.MODE_PRIVATE)
+    private val gson = Gson()
     
     private val _loginState = MutableLiveData<UiState<User>>()
     val loginState: LiveData<UiState<User>> = _loginState
@@ -49,11 +54,11 @@ class UserViewModel : ViewModel() {
                             name = "${userData.firstName} ${userData.lastName}".trim(),
                             phone = userData.phone,
                             rating = userData.rating.toFloat(),
-                            userType = resolveUserType(userData.role),
-                            status = userData.status
+                            userType = resolveUserType(userData.role)
                         )
                         _currentUser.value = user
                         _authToken.value = user.id // Using user ID as token for now
+                        persistUser(user)
                         _loginState.value = UiState.Success(user)
                     } else {
                         _loginState.value = UiState.Error(response.body()?.message ?: "Login failed")
@@ -70,6 +75,7 @@ class UserViewModel : ViewModel() {
     fun logout() {
         _currentUser.value = null
         _authToken.value = null
+        prefs.edit().remove("user").apply()
     }
     
     fun updateProfile(user: User) {
@@ -92,9 +98,10 @@ class UserViewModel : ViewModel() {
     fun setUser(user: User) {
         _currentUser.value = user
         _authToken.value = user.authToken
+        persistUser(user)
     }
     
-    fun signup(email: String, password: String, name: String, userType: UserType, phone: String? = null) {
+    fun signup(email: String, password: String, name: String, userType: UserType, phone: String? = null, profileImageUrl: String? = null) {
         viewModelScope.launch {
             _signupState.value = UiState.Loading
             try {
@@ -118,11 +125,11 @@ class UserViewModel : ViewModel() {
                             name = "${userData.firstName} ${userData.lastName}".trim(),
                             phone = userData.phone,
                             rating = userData.rating.toFloat(),
-                            userType = resolveUserType(userData.role),
-                            status = userData.status
+                            userType = resolveUserType(userData.role)
                         )
                         _currentUser.value = user
                         _authToken.value = user.id
+                        persistUser(user)
                         _signupState.value = UiState.Success(user)
                     } else {
                         _signupState.value = UiState.Error(response.body()?.message ?: "Signup failed")
@@ -149,5 +156,19 @@ class UserViewModel : ViewModel() {
             "ADMIN" -> UserType.ADMIN
             else -> UserType.BUYER
         }
+
+    init {
+        // restore last user if present
+        prefs.getString("user", null)?.let { json ->
+            runCatching { gson.fromJson(json, User::class.java) }.getOrNull()?.let { user ->
+                _currentUser.value = user
+                _authToken.value = user.id
+            }
+        }
+    }
+
+    private fun persistUser(user: User) {
+        prefs.edit().putString("user", gson.toJson(user)).apply()
+    }
 }
 

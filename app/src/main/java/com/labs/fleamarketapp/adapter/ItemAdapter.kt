@@ -14,7 +14,9 @@ import java.util.Locale
 
 class ItemAdapter(
     private val items: List<Item>,
-    private val onItemClick: (Item) -> Unit
+    private val onItemClick: (Item) -> Unit,
+    private val onEditClick: ((Item) -> Unit)? = null,
+    private val onDeleteClick: ((Item) -> Unit)? = null
 ) : RecyclerView.Adapter<ItemAdapter.ItemViewHolder>() {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
@@ -32,15 +34,24 @@ class ItemAdapter(
     inner class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val titleText: TextView = itemView.findViewById(R.id.itemTitle)
         private val priceText: TextView = itemView.findViewById(R.id.itemPrice)
-        private val categoryText: TextView = itemView.findViewById(R.id.itemCategory)
-        private val pickupText: TextView = itemView.findViewById(R.id.pickupLocation)
+        private val editButton: View? = itemView.findViewById(R.id.editButton)
+        private val deleteButton: View? = itemView.findViewById(R.id.deleteButton)
         private val imageView: ImageView = itemView.findViewById(R.id.itemImage)
         
         fun bind(item: Item) {
             titleText.text = item.title
             priceText.text = formatPrice(item.price)
-            categoryText.text = item.category
-            pickupText.text = itemView.context.getString(R.string.label_pickup_short, item.pickupLocation)
+
+            // Show action buttons when callbacks provided (My Listings)
+            if (onEditClick != null && onDeleteClick != null) {
+                editButton?.visibility = View.VISIBLE
+                deleteButton?.visibility = View.VISIBLE
+                editButton?.setOnClickListener { onEditClick.invoke(item) }
+                deleteButton?.setOnClickListener { onDeleteClick.invoke(item) }
+            } else {
+                editButton?.visibility = View.GONE
+                deleteButton?.visibility = View.GONE
+            }
             
             if (item.imageUrl != null && item.imageUrl.isNotEmpty()) {
                 Glide.with(itemView.context)
@@ -57,8 +68,8 @@ class ItemAdapter(
         }
         
         private fun formatPrice(price: Double): String {
-            val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
-            return format.format(price)
+            val format = NumberFormat.getNumberInstance(Locale("en","KE"))
+            return "Kshs ${format.format(price)}"
         }
     }
 }

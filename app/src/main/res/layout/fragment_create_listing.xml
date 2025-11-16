@@ -272,31 +272,6 @@
                         app:layout_constraintTop_toTopOf="parent" />
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/conditionInput"
-                        style="@style/Widget.FleaMarket.TextInputLayout"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_sm"
-                        android:hint="@string/create_listing_hint_condition"
-                        app:endIconMode="dropdown_menu"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/detailsTitle">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/conditionAutoComplete"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:hint="@string/create_listing_hint_condition"
-                            android:textColor="@color/text_primary"
-                            android:textColorHint="@color/text_secondary"
-                            android:contentDescription="@string/create_listing_hint_condition" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/pickupLocationInput"
                         style="@style/Widget.FleaMarket.TextInputLayout"
                         android:layout_width="0dp"
@@ -306,7 +281,7 @@
                         app:endIconMode="dropdown_menu"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/conditionInput">
+                        app:layout_constraintTop_toBottomOf="@id/detailsTitle">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/pickupLocationAutoComplete"
@@ -353,7 +328,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_xs"
-                        android:text="@string/create_listing_images_subtitle"
+                        android:text="@string/create_listing_images_subtitle_single"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/imagesTitle" />

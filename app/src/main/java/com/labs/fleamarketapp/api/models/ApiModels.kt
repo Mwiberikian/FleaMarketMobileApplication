@@ -33,7 +33,7 @@ data class LoginResponse(
     @SerializedName("lastName") val lastName: String,
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("role") val role: String,
-    @SerializedName("status") val status: String,
+    @SerializedName("status") val status: String? = null,
     @SerializedName("rating") val rating: Double = 0.0,
     @SerializedName("reviewCount") val reviewCount: Int = 0
 )
@@ -47,7 +47,6 @@ data class ServerItem(
     @SerializedName("price") val price: Double? = null,
     @SerializedName("startingBid") val startingBid: Double? = null,
     @SerializedName("currentBid") val currentBid: Double? = null,
-    @SerializedName("condition") val condition: String,
     @SerializedName("itemType") val itemType: String,
     @SerializedName("status") val status: String,
     @SerializedName("images") val images: List<String> = emptyList(),
@@ -89,7 +88,6 @@ data class CreateItemRequest(
     @SerializedName("description") val description: String,
     @SerializedName("price") val price: Double? = null,
     @SerializedName("startingBid") val startingBid: Double? = null,
-    @SerializedName("condition") val condition: String,
     @SerializedName("itemType") val itemType: String,
     @SerializedName("images") val images: List<String> = emptyList(),
     @SerializedName("categoryId") val categoryId: String? = null,

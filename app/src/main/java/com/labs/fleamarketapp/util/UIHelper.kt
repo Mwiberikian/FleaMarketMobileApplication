@@ -8,10 +8,10 @@ import java.text.NumberFormat
 import java.util.Locale
 
 object UIHelper {
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
+    private val numberFormat = NumberFormat.getNumberInstance(Locale("en", "KE"))
 
     fun formatPrice(value: Double?): String {
-        return if (value != null) currencyFormat.format(value) else "Price on request"
+        return if (value != null) "Kshs ${numberFormat.format(value)}" else "Price on request"
     }
 
     fun relativeTime(timestamp: Long): String {

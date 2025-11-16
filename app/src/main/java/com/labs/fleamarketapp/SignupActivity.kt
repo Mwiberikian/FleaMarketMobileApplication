@@ -11,12 +11,22 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.observe
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.labs.fleamarketapp.api.ApiClient
 import com.labs.fleamarketapp.data.UiState
 import com.labs.fleamarketapp.data.UserType
 import com.labs.fleamarketapp.databinding.ActivitySignupBinding
 import com.labs.fleamarketapp.util.ImagePicker.registerImagePicker
 import com.labs.fleamarketapp.viewmodel.UserViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+import java.io.FileOutputStream
 
 class SignupActivity : AppCompatActivity() {
 
@@ -91,7 +101,16 @@ class SignupActivity : AppCompatActivity() {
 
             if (validateInput(firstName, lastName, email, phone, password, confirmPassword, termsAccepted)) {
                 val fullName = "$firstName $lastName".trim()
-                viewModel.signup(email, password, fullName, role, phone.ifEmpty { null })
+                // Upload selected photo first (if any), then include URL in signup
+                lifecycleScope.launch {
+                    try {
+                        val uploadedUrl = withContext(Dispatchers.IO) { uploadProfilePhoto(selectedPhotoUri, capturedBitmap) }
+                        viewModel.signup(email, password, fullName, role, phone.ifEmpty { null }, uploadedUrl)
+                    } catch (e: Exception) {
+                        // Proceed without photo if upload fails
+                        viewModel.signup(email, password, fullName, role, phone.ifEmpty { null }, null)
+                    }
+                }
             }
         }
 
@@ -195,5 +214,28 @@ class SignupActivity : AppCompatActivity() {
         capturedBitmap = null
         binding.profilePreview.setImageResource(R.drawable.ic_profile_placeholder)
         binding.removePhotoButton.isVisible = false
+    }
+
+    private suspend fun uploadProfilePhoto(uri: Uri?, bitmap: Bitmap?): String? {
+        if (uri == null && bitmap == null) return null
+        val cacheDir = cacheDir
+        val temp = File.createTempFile("profile_", ".jpg", cacheDir)
+        if (uri != null) {
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(temp).use { output -> input.copyTo(output) }
+            }
+        } else if (bitmap != null) {
+            FileOutputStream(temp).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+        }
+        val body = temp.asRequestBody("image/jpeg".toMediaTypeOrNull())
+        val part = MultipartBody.Part.createFormData("file", temp.name, body)
+        val response = ApiClient.api.uploadImages(listOf(part))
+        if (response.isSuccessful && response.body()?.success == true) {
+            return response.body()?.data?.firstOrNull()
+        } else {
+            throw IllegalStateException(response.errorBody()?.string() ?: "Upload failed")
+        }
     }
 }

@@ -3,7 +3,6 @@ package com.strathmore.fleamarket.routes
 import com.strathmore.fleamarket.models.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -21,18 +20,7 @@ fun Route.adminRoutes() {
             call.respond(ApiResponse(success = true, data = users))
         }
         
-        put("/users/{id}/status") {
-            if (!requireAdmin(call)) return@put
-            val userId = call.parameters["id"] ?: return@put call.respond(
-                ApiResponse<Unit>(success = false, message = "User ID required")
-            )
-            val request = call.receive<UpdateStatusRequest>()
-            transaction {
-                val user = User.findById(UUID.fromString(userId)) ?: throw IllegalArgumentException("User not found")
-                user.status = UserStatus.valueOf(request.status.uppercase())
-            }
-            call.respond(ApiResponse<Unit>(success = true, message = "User status updated"))
-        }
+        // Approval feature removed
         
         get("/items") {
             if (!requireAdmin(call)) return@get
@@ -68,6 +56,7 @@ fun Route.adminRoutes() {
     }
 }
 
+// Used for item status updates
 @kotlinx.serialization.Serializable
 private data class UpdateStatusRequest(val status: String)
 
@@ -109,7 +98,6 @@ private fun Item.toDtoAdmin(): ItemDto {
         price = price,
         startingBid = startingBid,
         currentBid = currentBid,
-        condition = condition.name,
         itemType = itemType.name,
         status = status.name,
         images = imagesList,
@@ -127,7 +115,6 @@ private fun User.toDto(): UserDto = UserDto(
     lastName = lastName,
     phone = phone,
     role = role.name,
-    status = status.name,
     rating = rating,
     reviewCount = reviewCount
 )

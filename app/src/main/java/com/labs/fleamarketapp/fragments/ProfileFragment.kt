@@ -109,7 +109,6 @@ class ProfileFragment : Fragment() {
         }
         binding.profileName.text = user.name
         binding.profileEmail.text = user.email
-        binding.profileRating.text = "Rating • ${String.format("%.1f", user.rating)}"
         val photo = user.profileImageUrl
         if (!photo.isNullOrBlank()) {
             Glide.with(requireContext())

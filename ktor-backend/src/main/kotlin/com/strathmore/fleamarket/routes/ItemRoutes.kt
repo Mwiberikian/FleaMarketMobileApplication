@@ -106,9 +106,16 @@ fun Route.itemRoutes() {
                 )
                 
                 val request = call.receive<CreateItemRequest>()
+
+                // Reject client-side content URIs to avoid storing non-loadable image paths
+                if (request.images.any { it.startsWith("content://") }) {
+                    return@post call.respond(
+                        ApiResponse<ItemDto>(success = false, message = "Invalid image paths. Please upload images first.")
+                    )
+                }
                 
-                val item = transaction {
-                    Item.new {
+                val itemDto = transaction {
+                    val created = Item.new {
                         this.sellerId = User.findById(UUID.fromString(sellerId))
                             ?: throw Exception("User not found")
                         title = request.title
@@ -116,7 +123,6 @@ fun Route.itemRoutes() {
                         price = request.price
                         startingBid = request.startingBid
                         currentBid = request.startingBid ?: request.price
-                        condition = ItemCondition.valueOf(request.condition)
                         itemType = ItemType.valueOf(request.itemType)
                         status = ItemStatus.ACTIVE
                         images = Json.encodeToString(request.images)
@@ -127,12 +133,13 @@ fun Route.itemRoutes() {
                         pickupLocation = request.pickupLocation.takeIf { allowedLocations.contains(it) } ?: "STC"
                         createdAt = System.currentTimeMillis()
                     }
+                    created.toDto()
                 }
                 
                 call.respond(
                     ApiResponse<ItemDto>(
                         success = true,
-                        data = item.toDto(),
+                        data = itemDto,
                         message = "Item created successfully."
                     )
                 )
@@ -143,6 +150,76 @@ fun Route.itemRoutes() {
                         message = "Failed to create item: ${e.message}"
                     )
                 )
+            }
+        }
+        
+        // Update item (owner only)
+        put("/{id}") {
+            try {
+                val sellerId = call.request.header("X-User-Id") ?: return@put call.respond(
+                    ApiResponse<ItemDto>(success = false, message = "Authentication required")
+                )
+                val itemId = call.parameters["id"] ?: return@put call.respond(
+                    ApiResponse<ItemDto>(success = false, message = "Item ID required")
+                )
+                val request = call.receive<CreateItemRequest>()
+                
+                // Reject client-side content URIs
+                if (request.images.any { it.startsWith("content://") }) {
+                    return@put call.respond(
+                        ApiResponse<ItemDto>(success = false, message = "Invalid image paths. Please upload images first.")
+                    )
+                }
+                
+                val updatedDto = transaction {
+                    val item = Item.findById(UUID.fromString(itemId))
+                        ?: throw IllegalArgumentException("Item not found")
+                    if (item.sellerId.id.value.toString() != sellerId) {
+                        throw IllegalStateException("Not authorized to update this item")
+                    }
+                    item.apply {
+                        title = request.title
+                        description = request.description
+                        price = request.price
+                        startingBid = request.startingBid
+                        currentBid = request.startingBid ?: request.price
+                        itemType = ItemType.valueOf(request.itemType)
+                        images = Json.encodeToString(request.images)
+                        categoryId = request.categoryId?.toLongOrNull()?.let { Category.findById(it) }
+                        auctionEndTime = request.auctionEndTime
+                        pickupLocation = request.pickupLocation.takeIf { allowedLocations.contains(it) } ?: "STC"
+                    }
+                    item.toDto()
+                }
+                
+                call.respond(ApiResponse(success = true, data = updatedDto, message = "Item updated"))
+            } catch (e: Exception) {
+                call.respond(ApiResponse<ItemDto>(success = false, message = "Failed to update item: ${e.message}"))
+            }
+        }
+        
+        // Delete item (owner only)
+        delete("/{id}") {
+            try {
+                val sellerId = call.request.header("X-User-Id") ?: return@delete call.respond(
+                    ApiResponse<Unit>(success = false, message = "Authentication required")
+                )
+                val itemId = call.parameters["id"] ?: return@delete call.respond(
+                    ApiResponse<Unit>(success = false, message = "Item ID required")
+                )
+                
+                transaction {
+                    val item = Item.findById(UUID.fromString(itemId))
+                        ?: throw IllegalArgumentException("Item not found")
+                    if (item.sellerId.id.value.toString() != sellerId) {
+                        throw IllegalStateException("Not authorized to delete this item")
+                    }
+                    item.delete()
+                }
+                
+                call.respond(ApiResponse<Unit>(success = true, message = "Item deleted"))
+            } catch (e: Exception) {
+                call.respond(ApiResponse<Unit>(success = false, message = "Failed to delete item: ${e.message}"))
             }
         }
     }
@@ -167,7 +244,6 @@ private fun Item.toDto(): ItemDto {
         price = price,
         startingBid = startingBid,
         currentBid = currentBid,
-        condition = condition.name,
         itemType = itemType.name,
         status = status.name,
         images = imagesList,

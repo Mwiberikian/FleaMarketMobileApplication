@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.labs.fleamarketapp.R
@@ -20,9 +21,18 @@ import com.labs.fleamarketapp.data.UiState
 import com.labs.fleamarketapp.databinding.FragmentCreateListingBinding
 import com.labs.fleamarketapp.util.FormValidator
 import com.labs.fleamarketapp.util.ImagePicker.registerMultiImagePicker
+import com.labs.fleamarketapp.api.ApiClient
 import com.labs.fleamarketapp.viewmodel.ItemViewModel
 import com.labs.fleamarketapp.viewmodel.UserViewModel
 import java.util.Locale
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+import java.io.FileOutputStream
 
 class CreateListingFragment : Fragment() {
 
@@ -34,6 +44,8 @@ class CreateListingFragment : Fragment() {
 
     private val selectedImages = mutableListOf<Uri>()
     private val imageAdapter = SelectedImageAdapter(::removeImage)
+    private var editingItemId: String? = null
+    private var originalImages: List<String> = emptyList()
 
     private val galleryPicker = registerMultiImagePicker { uris ->
         if (uris.isEmpty()) return@registerMultiImagePicker
@@ -52,9 +64,10 @@ class CreateListingFragment : Fragment() {
         "Clothing" to 3L,
         "Jewellery" to 4L,
         "Furniture" to 5L,
+        "Food" to null,
         "Services" to null
     )
-    private val conditions = listOf("New", "Like New", "Good", "Fair")
+    // Removed conditions
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -72,19 +85,22 @@ class CreateListingFragment : Fragment() {
         setupItemTypeToggle()
         setupObservers()
         setupButtons()
+
+        // Check if we are editing an existing item
+        editingItemId = arguments?.getString("itemId")
+        editingItemId?.let { id ->
+            itemViewModel.loadItemForEdit(id)
+            binding.postListingButton.text = getString(R.string.edit) // reuse "Edit" text for brevity
+        }
     }
 
     private fun setupDropdowns() {
         binding.categoryAutoComplete.setAdapter(
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories.map { it.first })
         )
-        binding.conditionAutoComplete.setAdapter(
-            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, conditions)
-        )
         binding.pickupLocationAutoComplete.setAdapter(
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, PickupLocations.options)
         )
-        binding.conditionAutoComplete.setText(conditions.first(), false)
         binding.pickupLocationAutoComplete.setText(PickupLocations.options.first(), false)
     }
 
@@ -123,12 +139,35 @@ class CreateListingFragment : Fragment() {
                 is UiState.Loading -> binding.postListingButton.isEnabled = false
                 is UiState.Success -> {
                     binding.postListingButton.isEnabled = true
-                    Toast.makeText(context, "Listing created!", Toast.LENGTH_SHORT).show()
-                    findNavController().popBackStack()
+                    Toast.makeText(context, "Listing Successfully Posted", Toast.LENGTH_SHORT).show()
+                    // Navigate to My Listings
+                    findNavController().navigate(R.id.nav_listings)
                 }
                 is UiState.Error -> {
                     binding.postListingButton.isEnabled = true
                     Toast.makeText(context, state.message ?: "Failed to create listing", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        itemViewModel.editItemState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is UiState.Success -> prefillForm(state.data)
+                else -> { /* no-op */ }
+            }
+        }
+
+        itemViewModel.updateItemState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is UiState.Loading -> binding.postListingButton.isEnabled = false
+                is UiState.Success -> {
+                    binding.postListingButton.isEnabled = true
+                    Toast.makeText(context, "Listing updated", Toast.LENGTH_SHORT).show()
+                    findNavController().navigate(R.id.nav_listings)
+                }
+                is UiState.Error -> {
+                    binding.postListingButton.isEnabled = true
+                    Toast.makeText(context, state.message ?: "Failed to update listing", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -158,32 +197,82 @@ class CreateListingFragment : Fragment() {
 
         val categoryName = binding.categoryAutoComplete.text.toString()
         val categoryId = categories.firstOrNull { it.first == categoryName }?.second
-        val condition = binding.conditionAutoComplete.text.toString()
-            .uppercase(Locale.US)
-            .replace(" ", "_")
         val pickupLocation = binding.pickupLocationAutoComplete.text.toString()
 
-        itemViewModel.createItem(
-            sellerId = user.id,
-            title = binding.titleEditText.text.toString().trim(),
-            description = binding.descriptionEditText.text.toString().trim(),
-            price = priceValue,
-            startingBid = startingBid,
-            condition = condition,
-            itemType = if (isAuction) "AUCTION" else "FIXED_PRICE",
-            images = selectedImages.map { it.toString() },
-            categoryId = categoryId,
-            auctionEndTime = auctionEndTime,
-            pickupLocation = pickupLocation
-        )
+        // Upload images first (if any), then create or update item with public URLs
+        viewLifecycleOwner.lifecycleScope.launch {
+            binding.postListingButton.isEnabled = false
+            try {
+                val uploaded = withContext(Dispatchers.IO) { uploadSelectedImages() }
+                val finalImages = if (uploaded.isNotEmpty()) uploaded else originalImages
+
+                val itemTypeValue = if (isAuction) "AUCTION" else "FIXED_PRICE"
+                val editingId = editingItemId
+                if (editingId != null) {
+                    itemViewModel.updateItem(
+                        itemId = editingId,
+                        sellerId = user.id,
+                        title = binding.titleEditText.text.toString().trim(),
+                        description = binding.descriptionEditText.text.toString().trim(),
+                        price = priceValue,
+                        startingBid = startingBid,
+                        itemType = itemTypeValue,
+                        images = finalImages,
+                        categoryId = categoryId,
+                        auctionEndTime = auctionEndTime,
+                        pickupLocation = pickupLocation
+                    )
+                } else {
+                    itemViewModel.createItem(
+                        sellerId = user.id,
+                        title = binding.titleEditText.text.toString().trim(),
+                        description = binding.descriptionEditText.text.toString().trim(),
+                        price = priceValue,
+                        startingBid = startingBid,
+                        itemType = itemTypeValue,
+                        images = finalImages,
+                        categoryId = categoryId,
+                        auctionEndTime = auctionEndTime,
+                        pickupLocation = pickupLocation
+                    )
+                }
+            } catch (e: Exception) {
+                binding.postListingButton.isEnabled = true
+                Toast.makeText(requireContext(), e.message ?: "Image upload failed", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
+    private suspend fun uploadSelectedImages(): List<String> {
+        if (selectedImages.isEmpty()) return emptyList()
+        val resolver = requireContext().contentResolver
+        val parts = selectedImages.mapNotNull { uri ->
+            try {
+                val tmp = File.createTempFile("upl_", null, requireContext().cacheDir)
+                resolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(tmp).use { output -> input.copyTo(output) }
+                }
+                val mime = resolver.getType(uri) ?: "image/jpeg"
+                val body = tmp.asRequestBody(mime.toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("file", tmp.name, body)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (parts.isEmpty()) return emptyList()
+        val response = ApiClient.api.uploadImages(parts)
+        if (response.isSuccessful) {
+            val urls = response.body()?.data ?: emptyList()
+            return urls
+        } else {
+            throw IllegalStateException(response.errorBody()?.string() ?: "Upload failed")
+        }
+    }
     private fun validateInput(): Boolean {
         var valid = true
         valid = FormValidator.requiredText(binding.titleInput, binding.titleEditText.text) && valid
         valid = FormValidator.requiredText(binding.descriptionInput, binding.descriptionEditText.text) && valid
         valid = FormValidator.dropdownSelection(binding.categoryInput, binding.categoryAutoComplete.text?.toString()) && valid
-        valid = FormValidator.dropdownSelection(binding.conditionInput, binding.conditionAutoComplete.text?.toString()) && valid
         valid = FormValidator.dropdownSelection(binding.pickupLocationInput, binding.pickupLocationAutoComplete.text?.toString()) && valid
 
         when (binding.itemTypeToggle.checkedButtonId) {
@@ -210,13 +299,38 @@ class CreateListingFragment : Fragment() {
         imageAdapter.submitList(selectedImages.toList())
     }
 
+    private fun prefillForm(item: com.labs.fleamarketapp.data.Item) {
+        binding.titleEditText.setText(item.title)
+        binding.descriptionEditText.setText(item.description)
+        // Category (by name)
+        binding.categoryAutoComplete.setText(item.category, false)
+        // Pickup
+        binding.pickupLocationAutoComplete.setText(item.pickupLocation, false)
+        // Pricing mode
+        if (item.isAuction) {
+            binding.itemTypeToggle.check(R.id.auctionButton)
+            binding.priceInput.visibility = View.GONE
+            binding.startingBidInput.visibility = View.VISIBLE
+            binding.auctionDurationInput.visibility = View.VISIBLE
+            binding.startingBidEditText.setText(item.currentBid?.toString() ?: "")
+        } else {
+            binding.itemTypeToggle.check(R.id.fixedPriceButton)
+            binding.priceInput.visibility = View.VISIBLE
+            binding.startingBidInput.visibility = View.GONE
+            binding.auctionDurationInput.visibility = View.GONE
+            binding.priceEditText.setText(item.price.toString())
+        }
+        // Keep original images to reuse if user doesn't add new ones
+        originalImages = item.images
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
     companion object {
-        private const val MAX_IMAGES = 6
+                private const val MAX_IMAGES = 1
     }
 }
 

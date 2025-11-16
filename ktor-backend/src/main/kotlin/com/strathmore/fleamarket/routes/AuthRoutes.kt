@@ -51,7 +51,6 @@ fun Route.authRoutes() {
                         phone = request.phone
                         profileImageUrl = request.profileImageUrl
                         role = UserRole.valueOf(request.role.uppercase())
-                        status = UserStatus.PENDING // Requires admin approval
                     }
                 }
                 
@@ -66,7 +65,6 @@ fun Route.authRoutes() {
                             phone = user.phone,
                             profileImageUrl = user.profileImageUrl,
                             role = user.role.name,
-                            status = user.status.name,
                             rating = user.rating,
                             reviewCount = user.reviewCount
                         ),
@@ -102,16 +100,6 @@ fun Route.authRoutes() {
                     return@post
                 }
                 
-                if (user.status != UserStatus.APPROVED) {
-                    call.respond(
-                        ApiResponse<UserDto>(
-                            success = false,
-                            message = "Account is pending approval"
-                        )
-                    )
-                    return@post
-                }
-                
                 call.respond(
                     ApiResponse(
                         success = true,
@@ -123,7 +111,6 @@ fun Route.authRoutes() {
                             phone = user.phone,
                             profileImageUrl = user.profileImageUrl,
                             role = user.role.name,
-                            status = user.status.name,
                             rating = user.rating,
                             reviewCount = user.reviewCount
                         ),

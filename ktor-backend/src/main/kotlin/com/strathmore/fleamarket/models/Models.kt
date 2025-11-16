@@ -13,9 +13,7 @@ import java.util.*
 
 // Enums
 enum class UserRole { BUYER, SELLER, ADMIN }
-enum class UserStatus { PENDING, APPROVED, REJECTED }
 enum class ItemType { FIXED_PRICE, AUCTION }
-enum class ItemCondition { NEW, LIKE_NEW, GOOD, FAIR }
 enum class ItemStatus { PENDING, APPROVED, ACTIVE, SOLD }
 enum class NotificationType { SYSTEM, BID, ORDER, INFO }
 
@@ -28,7 +26,6 @@ object Users : UUIDTable("users") {
     val phone = varchar("phone", 20).nullable()
     val profileImageUrl = varchar("profileImageUrl", 1024).nullable()
     val role = enumerationByName<UserRole>("role", 20)
-    val status = enumerationByName<UserStatus>("status", 20)
     val rating = double("rating").default(0.0)
     val reviewCount = integer("reviewCount").default(0)
     val createdAt = long("createdAt").default(System.currentTimeMillis())
@@ -46,7 +43,6 @@ object Items : UUIDTable("items") {
     val price = double("price").nullable()
     val startingBid = double("startingBid").nullable()
     val currentBid = double("currentBid").nullable()
-    val condition = enumerationByName<ItemCondition>("condition", 20)
     val itemType = enumerationByName<ItemType>("itemType", 20)
     val status = enumerationByName<ItemStatus>("status", 20)
     val images = text("images") // JSON array as string
@@ -84,7 +80,6 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var phone by Users.phone
     var profileImageUrl by Users.profileImageUrl
     var role by Users.role
-    var status by Users.status
     var rating by Users.rating
     var reviewCount by Users.reviewCount
     var createdAt by Users.createdAt
@@ -106,7 +101,6 @@ class Item(id: EntityID<UUID>) : UUIDEntity(id) {
     var price by Items.price
     var startingBid by Items.startingBid
     var currentBid by Items.currentBid
-    var condition by Items.condition
     var itemType by Items.itemType
     var status by Items.status
     var images by Items.images
@@ -147,7 +141,6 @@ data class UserDto(
     val phone: String? = null,
     val profileImageUrl: String? = null,
     val role: String,
-    val status: String,
     val rating: Double = 0.0,
     val reviewCount: Int = 0
 )
@@ -169,7 +162,6 @@ data class ItemDto(
     val price: Double? = null,
     val startingBid: Double? = null,
     val currentBid: Double? = null,
-    val condition: String,
     val itemType: String,
     val status: String,
     val images: List<String> = emptyList(),
@@ -226,7 +218,6 @@ data class CreateItemRequest(
     val description: String,
     val price: Double? = null,
     val startingBid: Double? = null,
-    val condition: String,
     val itemType: String,
     val images: List<String> = emptyList(),
     val categoryId: String? = null,

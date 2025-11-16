@@ -52,8 +52,6 @@ class ItemDetailFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.imagePager.adapter = imageAdapter
-        mediator = TabLayoutMediator(binding.imagesIndicator, binding.imagePager) { _, _ -> }
-        mediator?.attach()
 
         binding.bidHistoryRecycler.apply {
             layoutManager = LinearLayoutManager(context)
@@ -136,17 +134,14 @@ class ItemDetailFragment : Fragment() {
 
         binding.itemTitle.text = item.title
         binding.itemPrice.text = UIHelper.formatPrice(item.price)
-        binding.itemCategory.text = "Category: ${item.category.ifBlank { "General" }}"
-        binding.pickupChip.text = getString(R.string.label_pickup_short, item.pickupLocation)
+        binding.itemCategory.text = "Category: ${item.category}"
         binding.timePostedChip.text = UIHelper.relativeTime(item.createdAt)
         binding.itemDescription.text = item.description
-        binding.conditionValue.text = "Condition: ${item.conditionLabel()}"
-        binding.categoryValue.text = "Category: ${item.category.ifBlank { "General" }}"
+        binding.categoryValue.text = "Category: ${item.category}"
         binding.pickupValue.text = "Pickup: ${item.pickupLocation}"
 
         binding.sellerName.text = item.sellerName.ifBlank { "Strathmore Seller" }
-        binding.sellerRating.text = "Rating • 4.8"
-        binding.sellerStats.text = "16 sales • Member since 2021"
+        binding.sellerStats.text = "Member since ${formatMemberSince(item.createdAt)}"
         binding.sellerAvatar.setImageResource(R.drawable.ic_launcher_foreground)
 
         binding.contactButton.setOnClickListener { toast("Contact seller feature coming soon") }
@@ -209,12 +204,14 @@ class ItemDetailFragment : Fragment() {
         return if (hours > 0) "Ends in ${hours}h ${minutes}m" else "Ends in ${minutes}m"
     }
 
-    private fun Item.conditionLabel(): String {
-        if (condition.isBlank()) return "Good"
-        return condition.replace('_', ' ')
-            .lowercase(Locale.US)
-            .replaceFirstChar { it.titlecase(Locale.US) }
+    private fun formatMemberSince(timestamp: Long): String {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
+        val year = cal.get(java.util.Calendar.YEAR)
+        val month = cal.getDisplayName(java.util.Calendar.MONTH, java.util.Calendar.SHORT, java.util.Locale.getDefault())
+        return "$month $year"
     }
+
+    // condition removed: no-op
 
     private fun toast(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -222,7 +219,6 @@ class ItemDetailFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mediator?.detach()
         _binding = null
     }
 }

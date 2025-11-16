@@ -36,7 +36,6 @@ class ItemRepository(
         description: String,
         price: Double?,
         startingBid: Double?,
-        condition: String,
         itemType: String,
         images: List<String>,
         categoryId: Long?,
@@ -49,7 +48,6 @@ class ItemRepository(
                 description = description,
                 price = price,
                 startingBid = startingBid,
-                condition = condition,
                 itemType = itemType,
                 images = images,
                 categoryId = categoryId?.toString(),
@@ -69,7 +67,7 @@ class ItemRepository(
                         price = serverItem.price,
                         startingBid = serverItem.startingBid,
                         currentBid = serverItem.currentBid,
-                        condition = ItemCondition.valueOf(serverItem.condition),
+                        condition = ItemCondition.GOOD,
                         itemType = ItemType.valueOf(serverItem.itemType),
                         status = Status.valueOf(serverItem.status),
                         images = serverItem.images,
@@ -126,6 +124,76 @@ class ItemRepository(
     
     suspend fun getItemsForSeller(sellerId: String): Result<List<ItemEntity>> =
         refreshItems(sellerId = sellerId)
+
+    suspend fun refreshItemById(itemId: String): Result<ItemEntity> {
+        return try {
+            val response = api.getItemById(itemId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val serverItem = response.body()?.data ?: return Result.failure(Exception("Item not found"))
+                val entity = serverItem.toEntity()
+                itemDao.upsert(entity)
+                Result.success(entity)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to load item"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun deleteItem(itemId: String, sellerId: String): Result<Unit> {
+        return try {
+            val response = api.deleteOwnItem(sellerId, itemId)
+            if (response.isSuccessful && (response.body()?.success == true)) {
+                // Refresh seller items cache
+                refreshItems(sellerId = sellerId)
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to delete item"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateItem(
+        itemId: String,
+        sellerId: String,
+        title: String,
+        description: String,
+        price: Double?,
+        startingBid: Double?,
+        itemType: String,
+        images: List<String>,
+        categoryId: Long?,
+        auctionEndTime: Long?,
+        pickupLocation: String
+    ): Result<ItemEntity> {
+        return try {
+            val request = CreateItemRequest(
+                title = title,
+                description = description,
+                price = price,
+                startingBid = startingBid,
+                itemType = itemType,
+                images = images,
+                categoryId = categoryId?.toString(),
+                auctionEndTime = auctionEndTime,
+                pickupLocation = pickupLocation
+            )
+            val response = api.updateItem(sellerId, itemId, request)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val serverItem = response.body()?.data ?: return Result.failure(Exception("Empty response"))
+                val entity = serverItem.toEntity()
+                itemDao.upsert(entity)
+                Result.success(entity)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to update item"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     
     private fun ServerItem.toEntity(): ItemEntity {
         return ItemEntity(
@@ -136,7 +204,7 @@ class ItemRepository(
             price = price,
             startingBid = startingBid,
             currentBid = currentBid,
-            condition = ItemCondition.valueOf(condition),
+            condition = ItemCondition.GOOD,
             itemType = ItemType.valueOf(itemType),
             status = Status.valueOf(status),
             images = images,

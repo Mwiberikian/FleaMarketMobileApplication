@@ -4,15 +4,13 @@ import com.strathmore.fleamarket.models.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.io.File
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 
 object DatabaseFactory {
     fun init() {
-        val dataDir = File("data").apply { mkdirs() }
-        val driverClassName = "org.sqlite.JDBC"
-        val jdbcURL = "jdbc:sqlite:${File(dataDir, "marketplace.db").absolutePath}"
-        
-        Database.connect(jdbcURL, driverClassName)
+        val config = hikari()
+        Database.connect(HikariDataSource(config))
         
         transaction {
             // Create tables
@@ -23,6 +21,25 @@ object DatabaseFactory {
         }
     }
     
+    private fun hikari(): HikariConfig {
+        val cfg = HikariConfig()
+        val url = System.getenv("DB_URL")
+            ?: System.getProperty("DB_URL")
+            ?: "jdbc:mysql://localhost:3306/marketplace?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+        val user = System.getenv("DB_USER") ?: System.getProperty("DB_USER") ?: "root"
+        val pass = System.getenv("DB_PASSWORD") ?: System.getProperty("DB_PASSWORD") ?: ""
+        
+        cfg.jdbcUrl = url
+        cfg.username = user
+        cfg.password = pass
+        cfg.driverClassName = "com.mysql.cj.jdbc.Driver"
+        cfg.maximumPoolSize = 10
+        cfg.minimumIdle = 2
+        cfg.isAutoCommit = false
+        cfg.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        return cfg
+    }
+    
     private fun preloadData() {
         // Preload categories
         val defaultCategories = listOf(
@@ -30,6 +47,9 @@ object DatabaseFactory {
             "Books" to "Books and stationery",
             "Clothing" to "Clothing and accessories",
             "Jewellery" to "Jewellery and watches",
+            "Furniture" to "Home and office furniture",
+            "Food" to "Food and beverages",
+            "Services" to "Various services offered",
             "Other" to "Other items"
         )
         defaultCategories.forEach { (name, descriptionText) ->
@@ -47,7 +67,6 @@ object DatabaseFactory {
                 lastName = "User"
                 password = "admin123" // In production, hash this
                 role = UserRole.ADMIN
-                status = UserStatus.APPROVED
             }
         
         val seller = User.find { Users.email eq "seller@strathmore.edu" }.firstOrNull()
@@ -57,7 +76,6 @@ object DatabaseFactory {
                 lastName = "Seller"
                 password = "password"
                 role = UserRole.SELLER
-                status = UserStatus.APPROVED
             }
         
         User.find { Users.email eq "buyer@strathmore.edu" }.firstOrNull()
@@ -67,7 +85,6 @@ object DatabaseFactory {
                 lastName = "Buyer"
                 password = "password"
                 role = UserRole.BUYER
-                status = UserStatus.APPROVED
             }
         
         // Shared sample item so every user sees content immediately
@@ -80,7 +97,6 @@ object DatabaseFactory {
                 price = 450.0
                 startingBid = 300.0
                 currentBid = 0.0
-                condition = ItemCondition.GOOD
                 itemType = ItemType.FIXED_PRICE
                 status = ItemStatus.ACTIVE
                 images = """["https://images.unsplash.com/photo-1517336714731-489689fd1ca8"]"""

@@ -3,6 +3,7 @@ package com.labs.fleamarketapp.api
 import com.labs.fleamarketapp.api.models.*
 import retrofit2.Response
 import retrofit2.http.*
+import okhttp3.MultipartBody
 
 /**
  * Retrofit API interface for Ktor backend
@@ -33,6 +34,19 @@ interface MarketplaceApi {
         @Body request: CreateItemRequest
     ): Response<ApiResponse<ServerItem>>
     
+    @PUT("api/items/{id}")
+    suspend fun updateItem(
+        @Header("X-User-Id") userId: String,
+        @Path("id") itemId: String,
+        @Body request: CreateItemRequest
+    ): Response<ApiResponse<ServerItem>>
+    
+    @DELETE("api/items/{id}")
+    suspend fun deleteOwnItem(
+        @Header("X-User-Id") userId: String,
+        @Path("id") itemId: String
+    ): Response<ApiResponse<Unit>>
+    
     // Bids
     @GET("api/items/{itemId}/bids")
     suspend fun getBidsForItem(@Path("itemId") itemId: String): Response<ApiResponse<List<ServerBid>>>
@@ -58,12 +72,12 @@ interface MarketplaceApi {
     @PUT("api/notifications/{id}/read")
     suspend fun markNotificationAsRead(
         @Path("id") id: String
-    ): Response<ApiResponse<Unit>>
+    ): Response<Void>
 
     @PUT("api/notifications/{id}/unread")
     suspend fun markNotificationAsUnread(
         @Path("id") id: String
-    ): Response<ApiResponse<Unit>>
+    ): Response<Void>
     
     // Admin
     @GET("api/admin/users")
@@ -95,5 +109,12 @@ interface MarketplaceApi {
         @Header("X-Admin-Id") adminId: String,
         @Path("id") itemId: String
     ): Response<ApiResponse<Unit>>
+
+    // Uploads
+    @Multipart
+    @POST("api/upload")
+    suspend fun uploadImages(
+        @Part files: List<MultipartBody.Part>
+    ): Response<ApiResponse<List<String>>>
 }
 

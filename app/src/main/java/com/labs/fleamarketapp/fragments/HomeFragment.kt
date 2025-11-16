@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.labs.fleamarketapp.R
 import com.labs.fleamarketapp.adapter.CategoryAdapter
 import com.labs.fleamarketapp.adapter.FeaturedListingAdapter
@@ -48,14 +49,14 @@ class HomeFragment : Fragment() {
     private var selectedCategory = "All"
 
     private val categories = listOf(
-        HomeCategory("All", "Everything new"),
+        HomeCategory("All", "Everything new on campus"),
         HomeCategory("Books", "Texts & notes"),
         HomeCategory("Electronics", "Phones & laptops"),
+        HomeCategory("Jewellery", "Watches & accessories"),
         HomeCategory("Furniture", "Dorm essentials"),
+        HomeCategory("Food", "Snacks & meals"),
         HomeCategory("Fashion", "Fits & accessories"),
-        HomeCategory("Services", "Tutors & gigs"),
-        HomeCategory("Tickets", "Events & socials"),
-        HomeCategory("Free", "Giveaways")
+        HomeCategory("Services", "Tutors & gigs")
     )
 
     override fun onCreateView(
@@ -75,7 +76,6 @@ class HomeFragment : Fragment() {
         bindCategories()
         setupObservers()
         setupLoginCta()
-        populateSampleData()
         viewModel.loadFeaturedItems()
     }
 
@@ -91,14 +91,19 @@ class HomeFragment : Fragment() {
                 findNavController().navigate(R.id.nav_listings)
             }
         }
+
+        // Load banner and why-use images from assets, matching view IDs to asset filenames
+        loadAssetImage(binding.bannerImage, "bannerImage.png")
+        loadAssetImage(binding.whyImageTop, "whyImageTop.png")
+        loadAssetImage(binding.whyImageBottom, "whyImageBottom.png")
     }
 
     private fun setupSearch() {
         binding.searchEditText.doAfterTextChanged {
             applyFilters()
         }
-        binding.filterButton.setOnClickListener {
-            Toast.makeText(requireContext(), "Filter coming soon", Toast.LENGTH_SHORT).show()
+        binding.searchGoButton.setOnClickListener {
+            applyFilters()
         }
     }
 
@@ -156,40 +161,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun populateSampleData() {
-        val sample = listOf(
-            sampleItem("ThinkPad X1 Carbon", "Electronics", "Brian O.", "STC", 165000.0),
-            sampleItem("Graphic Design Services", "Services", "Lynn M.", "Phase1 Gazebos", 2500.0),
-            sampleItem("Principles of Accounting", "Books", "Kevin W.", "Library Atrium", 1800.0),
-            sampleItem("Dorm Sofa", "Furniture", "Maria N.", "Parking Lot", 9500.0),
-            sampleItem("Canon M50 Camera", "Electronics", "Ian K.", "Phase2 Gazebos", 78000.0)
-        )
-        updateListings(sample)
-    }
-
-    private fun sampleItem(
-        title: String,
-        category: String,
-        seller: String,
-        pickup: String,
-        price: Double
-    ): Item {
-        val image = SAMPLE_IMAGES.random()
-        return Item(
-            id = UUID.randomUUID().toString(),
-            title = title,
-            description = "Well maintained $title. Available for campus pickup.",
-            price = price,
-            imageUrl = image,
-            images = listOf(image),
-            category = category,
-            sellerId = "sample",
-            sellerName = seller,
-            pickupLocation = pickup,
-            createdAt = System.currentTimeMillis() - (0..72).random() * 60 * 60 * 1000L,
-            status = ItemStatus.AVAILABLE
-        )
-    }
+    // Removed sample data population to avoid showing mock listings
 
     private fun updateListings(items: List<Item>) {
         featuredItems = items.sortedByDescending { it.createdAt }.take(6)
@@ -199,7 +171,11 @@ class HomeFragment : Fragment() {
     private fun applyFilters() {
         val query = binding.searchEditText.text?.toString()?.trim().orEmpty()
         val filtered = featuredItems.filter { item ->
-            val matchesCategory = selectedCategory == "All" || item.category.equals(selectedCategory, true)
+            val matchesCategory = when {
+                selectedCategory == "All" -> true
+                selectedCategory.equals("Fashion", true) -> item.category.equals("Clothing", true)
+                else -> item.category.equals(selectedCategory, true)
+            }
             val matchesQuery = query.isBlank() ||
                     item.title.contains(query, true) ||
                     item.description.contains(query, true)
@@ -213,6 +189,35 @@ class HomeFragment : Fragment() {
         handleRestrictedAction {
             val bundle = Bundle().apply { putString("itemId", item.id) }
             findNavController().navigate(R.id.nav_item_detail, bundle)
+        }
+    }
+
+    private fun loadAssetImage(view: android.widget.ImageView, fileName: String) {
+        val ctx = view.context
+        val assetToUse = when {
+            assetExists(ctx, fileName) -> fileName
+            assetExists(ctx, fileName.lowercase()) -> fileName.lowercase()
+            else -> null
+        }
+        if (assetToUse == null) {
+            // Show a subtle placeholder if asset isn't found
+            Glide.with(ctx)
+                .load(R.drawable.ic_launcher_foreground)
+                .into(view)
+            return
+        }
+        Glide.with(ctx)
+            .load("file:///android_asset/$assetToUse")
+            .error(R.drawable.ic_launcher_foreground)
+            .into(view)
+    }
+
+    private fun assetExists(context: android.content.Context, name: String): Boolean {
+        return try {
+            context.assets.open(name).close()
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 

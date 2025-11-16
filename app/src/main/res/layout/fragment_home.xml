@@ -37,10 +37,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:hint="Search listings"
-                app:startIconDrawable="@android:drawable/ic_menu_search"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/filterButton"
+                app:layout_constraintEnd_toStartOf="@+id/searchGoButton"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintHorizontal_chainStyle="packed">
 
@@ -53,20 +52,21 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/filterButton"
+                android:id="@+id/searchGoButton"
                 style="@style/Widget.FleaMarket.Button.Outlined"
-                android:layout_width="48dp"
+                android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:layout_marginStart="@dimen/space_sm"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:padding="0dp"
-                android:contentDescription="Filter"
-                app:icon="@drawable/ic_filter"
+                android:paddingStart="@dimen/space_md"
+                android:paddingEnd="@dimen/space_md"
+                android:text="Search"
+                app:icon="@android:drawable/ic_menu_search"
                 app:iconGravity="textStart"
-                app:iconPadding="0dp"
+                app:iconPadding="@dimen/space_sm"
                 app:iconTint="@color/primary"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/searchInputLayout"
@@ -99,6 +99,17 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
+                    <ImageView
+                        android:id="@+id/bannerImage"
+                        android:layout_width="0dp"
+                        android:layout_height="160dp"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_launcher_foreground"
+                        app:layout_constraintTop_toBottomOf="@id/bannerTitle"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
                     <TextView
                         android:id="@+id/bannerSubtitle"
                         style="@style/TextAppearance.FleaMarket.Body"
@@ -106,7 +117,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_sm"
                         android:text="Discover curated listings from students and alumni. Buy, sell, and trade safely on campus."
-                        app:layout_constraintTop_toBottomOf="@id/bannerTitle"
+                        app:layout_constraintTop_toBottomOf="@id/bannerImage"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -178,29 +189,66 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:overScrollMode="never" />
-            <TextView
-                android:id="@+id/whyUseTitle"
-                style="@style/TextAppearance.FleaMarket.Title"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/whyUseCard"
+                style="@style/Widget.FleaMarket.Card"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_lg"
-                android:text="Why Use SU Market"
+                app:cardBackgroundColor="@color/surface"
                 app:layout_constraintTop_toBottomOf="@id/featuredRecycler"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent">
 
-            <TextView
-                android:id="@+id/whyUseBody"
-                style="@style/TextAppearance.FleaMarket.Body"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_sm"
-                android:gravity="center"
-                android:text="@string/why_use_body"
-                android:textColor="@color/text_secondary"
-                app:layout_constraintTop_toBottomOf="@id/whyUseTitle"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_md">
+
+                    <TextView
+                        android:id="@+id/whyUseTitle"
+                        style="@style/TextAppearance.FleaMarket.Title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/why_use_title" />
+
+                    <ImageView
+                        android:id="@+id/whyImageTop"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_launcher_foreground"
+                        android:contentDescription="@string/why_use_title" />
+
+                    <TextView
+                        android:id="@+id/whyCaptionTop"
+                        style="@style/TextAppearance.FleaMarket.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:text="@string/why_use_body" />
+
+                    <ImageView
+                        android:id="@+id/whyImageBottom"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_launcher_foreground"
+                        android:contentDescription="@string/why_use_title" />
+
+                    <TextView
+                        android:id="@+id/whyCaptionBottom"
+                        style="@style/TextAppearance.FleaMarket.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:text="@string/why_use_body" />
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/emptyStateText"
@@ -209,9 +257,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_md"
                 android:gravity="center"
-                android:text="No listings match your filters yet."
+                android:text="@string/no_items_yet"
                 android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/whyUseBody"
+                app:layout_constraintTop_toBottomOf="@id/featuredTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 

@@ -5,8 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.observe
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.labs.fleamarketapp.R
@@ -21,8 +21,8 @@ class ListingsFragment : Fragment() {
     private var _binding: FragmentListingsBinding? = null
     private val binding get() = _binding!!
     
-    private val itemViewModel: ItemViewModel by viewModels()
-    private val userViewModel: UserViewModel by viewModels()
+    private val itemViewModel: ItemViewModel by activityViewModels()
+    private val userViewModel: UserViewModel by activityViewModels()
     private lateinit var itemAdapter: ItemAdapter
     
     override fun onCreateView(
@@ -41,22 +41,37 @@ class ListingsFragment : Fragment() {
         setupObservers()
         setupClickListeners()
         
-        // Load user listings
-        userViewModel.currentUser.value?.let { user ->
-            itemViewModel.loadUserListings(user.id)
-        } ?: run {
-            // User not logged in, show empty state
-            binding.emptyText.visibility = View.VISIBLE
+        // Observe user and load listings when available
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            userViewModel.currentUser.collect { user ->
+                if (user != null) {
+                    itemViewModel.loadUserListings(user.id)
+                } else {
+                    binding.emptyText.visibility = View.VISIBLE
+                }
+            }
         }
     }
     
     private fun setupRecyclerView() {
-        itemAdapter = ItemAdapter(emptyList()) { item ->
-            val bundle = Bundle().apply {
-                putString("itemId", item.id)
+        itemAdapter = ItemAdapter(
+            emptyList(),
+            onItemClick = { item ->
+                val bundle = Bundle().apply {
+                    putString("itemId", item.id)
+                }
+                findNavController().navigate(R.id.nav_item_detail, bundle)
+            },
+            onEditClick = { item ->
+                // Navigate to create listing to edit (prefill flow to be implemented)
+                val args = Bundle().apply { putString("itemId", item.id) }
+                findNavController().navigate(R.id.nav_create_listing, args)
+            },
+            onDeleteClick = { item ->
+                val user = userViewModel.currentUser.value ?: return@ItemAdapter
+                itemViewModel.deleteItem(item.id, user.id)
             }
-            findNavController().navigate(R.id.nav_item_detail, bundle)
-        }
+        )
         binding.listingsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = itemAdapter
@@ -76,12 +91,23 @@ class ListingsFragment : Fragment() {
                         binding.emptyText.visibility = View.VISIBLE
                     } else {
                         binding.emptyText.visibility = View.GONE
-                        itemAdapter = ItemAdapter(state.data) { item ->
-                            val bundle = Bundle().apply {
-                                putString("itemId", item.id)
+                        itemAdapter = ItemAdapter(
+                            state.data,
+                            onItemClick = { item ->
+                                val bundle = Bundle().apply {
+                                    putString("itemId", item.id)
+                                }
+                                findNavController().navigate(R.id.nav_item_detail, bundle)
+                            },
+                            onEditClick = { item ->
+                                val args = Bundle().apply { putString("itemId", item.id) }
+                                findNavController().navigate(R.id.nav_create_listing, args)
+                            },
+                            onDeleteClick = { item ->
+                                val user = userViewModel.currentUser.value ?: return@ItemAdapter
+                                itemViewModel.deleteItem(item.id, user.id)
                             }
-                            findNavController().navigate(R.id.nav_item_detail, bundle)
-                        }
+                        )
                         binding.listingsRecyclerView.adapter = itemAdapter
                     }
                 }

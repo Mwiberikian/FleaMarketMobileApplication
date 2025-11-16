@@ -48,7 +48,11 @@
     <string name="notification_type_order">Order update</string>
     <string name="notification_type_message">Message</string>
     <string name="action_login">Log in</string>
+    <string name="why_use_title">Why Use SU Market</string>
     <string name="why_use_body">Trusted peers, safe pickups, and campus-friendly pricing all in one marketplace.</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="no_items_yet">No items posted yet</string>
     <string name="accessibility_select_category">Select listing category</string>
     <string name="accessibility_select_condition">Select item condition</string>
     <string name="accessibility_select_pickup_location">Select pickup location</string>
@@ -67,6 +71,7 @@
     <string name="create_listing_hint_pickup">Pickup location</string>
     <string name="create_listing_images_title">Images</string>
     <string name="create_listing_images_subtitle">Upload up to 6 clear photos</string>
+    <string name="create_listing_images_subtitle_single">Upload 1 clear photo</string>
     <string name="create_listing_add_images">Add Images</string>
     <string name="create_listing_post">Post Listing</string>
 </resources>

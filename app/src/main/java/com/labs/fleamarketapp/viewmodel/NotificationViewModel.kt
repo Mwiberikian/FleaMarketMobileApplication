@@ -96,7 +96,7 @@ class NotificationViewModel : ViewModel() {
                 api.markNotificationAsUnread(notificationId)
             }
             
-            if (response.isSuccessful && response.body()?.success == true) {
+            if (response.isSuccessful) {
                 val current = _notificationsState.value
                 if (current is UiState.Success) {
                     val updated = current.data.map {

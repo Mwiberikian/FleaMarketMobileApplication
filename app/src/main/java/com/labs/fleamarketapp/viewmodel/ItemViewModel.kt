@@ -36,6 +36,15 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
     private val _refreshState = MutableLiveData<UiState<Unit>>()
     val refreshState: LiveData<UiState<Unit>> = _refreshState
     
+    private val _deleteState = MutableLiveData<UiState<Unit>>()
+    val deleteState: LiveData<UiState<Unit>> = _deleteState
+
+    private val _editItemState = MutableLiveData<UiState<Item>>()
+    val editItemState: LiveData<UiState<Item>> = _editItemState
+
+    private val _updateItemState = MutableLiveData<UiState<Item>>()
+    val updateItemState: LiveData<UiState<Item>> = _updateItemState
+    
     /**
      * Load featured items - refresh from API first, fallback to local cache if offline
      */
@@ -110,7 +119,6 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
         description: String,
         price: Double?,
         startingBid: Double?,
-        condition: String,
         itemType: String,
         images: List<String>,
         categoryId: Long?,
@@ -125,7 +133,6 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
                 description = description,
                 price = price,
                 startingBid = startingBid,
-                condition = condition,
                 itemType = itemType,
                 images = images,
                 categoryId = categoryId,
@@ -178,6 +185,67 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun deleteItem(itemId: String, sellerId: String) {
+        viewModelScope.launch {
+            _deleteState.value = UiState.Loading
+            val result = itemRepository.deleteItem(itemId, sellerId)
+            result.onSuccess {
+                _deleteState.value = UiState.Success(Unit)
+                loadUserListings(sellerId)
+            }.onFailure { e ->
+                _deleteState.value = UiState.Error(e.message ?: "Failed to delete item")
+            }
+        }
+    }
+
+    fun loadItemForEdit(itemId: String) {
+        viewModelScope.launch {
+            _editItemState.value = UiState.Loading
+            val entity = itemRepository.getItem(itemId).firstOrNull()
+            if (entity != null) {
+                _editItemState.value = UiState.Success(entity.toItem())
+            } else {
+                _editItemState.value = UiState.Error("Item not found locally")
+            }
+        }
+    }
+
+    fun updateItem(
+        itemId: String,
+        sellerId: String,
+        title: String,
+        description: String,
+        price: Double?,
+        startingBid: Double?,
+        itemType: String,
+        images: List<String>,
+        categoryId: Long?,
+        auctionEndTime: Long?,
+        pickupLocation: String
+    ) {
+        viewModelScope.launch {
+            _updateItemState.value = UiState.Loading
+            val result = itemRepository.updateItem(
+                itemId = itemId,
+                sellerId = sellerId,
+                title = title,
+                description = description,
+                price = price,
+                startingBid = startingBid,
+                itemType = itemType,
+                images = images,
+                categoryId = categoryId,
+                auctionEndTime = auctionEndTime,
+                pickupLocation = pickupLocation
+            )
+            result.onSuccess { entity ->
+                _updateItemState.value = UiState.Success(entity.toItem())
+            }.onFailure { e ->
+                _updateItemState.value = UiState.Error(e.message ?: "Failed to update item")
+            }
+        }
+    }
     
     // Helper to convert ItemEntity to Item (UI model)
     private fun ItemEntity.toItem(): Item = Item(
@@ -187,7 +255,7 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
         price = (price ?: startingBid ?: 0.0),
         imageUrl = images.firstOrNull(),
         images = images,
-        category = "",
+        category = categoryNameFor(categoryId),
         sellerId = sellerId,
         sellerName = "",
         pickupLocation = pickupLocation,
@@ -202,5 +270,16 @@ class ItemViewModel(application: Application) : AndroidViewModel(application) {
         currentBid = currentBid ?: price ?: startingBid,
         condition = condition.name
     )
+
+    private fun categoryNameFor(id: Long?): String {
+        return when (id) {
+            1L -> "Electronics"
+            2L -> "Books"
+            3L -> "Clothing"
+            4L -> "Jewellery"
+            5L -> "Furniture"
+            else -> ""
+        }
+    }
 }
 

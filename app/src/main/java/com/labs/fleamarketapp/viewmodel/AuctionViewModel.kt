@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.labs.fleamarketapp.api.ApiClient
+import com.labs.fleamarketapp.api.models.ServerItem
 import com.labs.fleamarketapp.data.Bid
 import com.labs.fleamarketapp.data.Item
 import com.labs.fleamarketapp.data.UiState
@@ -37,11 +39,23 @@ class AuctionViewModel(application: Application) : AndroidViewModel(application)
     val placeBidState: LiveData<UiState<Bid>> = _placeBidState
     
     /**
-     * Load item details from local database
+     * Load item details (refresh from server then read local)
      */
     fun loadItem(itemId: String) {
         viewModelScope.launch {
             _itemState.value = UiState.Loading
+            // Try to load fresh copy from backend first to get sellerName, category, etc.
+            try {
+                val response = ApiClient.api.getItemById(itemId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverItem = response.body()!!.data!!
+                    _itemState.value = UiState.Success(serverItem.toDomainItem())
+                    // also upsert locally for cache
+                    itemRepository.refreshItemById(itemId)
+                    return@launch
+                }
+            } catch (_: Exception) { /* fallback to local */ }
+
             itemRepository.getItem(itemId)
                 .catch { e ->
                     _itemState.value = UiState.Error(e.message ?: "Failed to load item")
@@ -114,9 +128,9 @@ class AuctionViewModel(application: Application) : AndroidViewModel(application)
         price = price ?: startingBid ?: 0.0,
         imageUrl = images.firstOrNull(),
         images = images,
-        category = "",
+        category = categoryNameFor(categoryId),
         sellerId = sellerId,
-        sellerName = "",
+        sellerName = "", // not stored locally; could be enriched later
         pickupLocation = pickupLocation,
         createdAt = createdAt,
         status = when (status) {
@@ -126,8 +140,36 @@ class AuctionViewModel(application: Application) : AndroidViewModel(application)
         },
         isAuction = itemType == com.labs.fleamarketapp.local.entities.ItemType.AUCTION,
         auctionEndTime = auctionEndTime,
-        currentBid = currentBid ?: price ?: startingBid,
-        condition = condition.name
+        currentBid = currentBid ?: price ?: startingBid
+    )
+
+    private fun categoryNameFor(id: Long?): String {
+        return when (id) {
+            1L -> "Electronics"
+            2L -> "Books"
+            3L -> "Clothing"
+            4L -> "Jewellery"
+            5L -> "Furniture"
+            else -> ""
+        }
+    }
+
+    private fun ServerItem.toDomainItem(): Item = Item(
+        id = id,
+        title = title,
+        description = description,
+        price = price ?: startingBid ?: 0.0,
+        imageUrl = images.firstOrNull(),
+        images = images,
+        category = categoryName ?: "",
+        sellerId = sellerId,
+        sellerName = sellerName ?: "",
+        pickupLocation = pickupLocation,
+        createdAt = createdAt,
+        status = com.labs.fleamarketapp.data.ItemStatus.AVAILABLE,
+        isAuction = itemType.equals("AUCTION", true),
+        auctionEndTime = auctionEndTime,
+        currentBid = currentBid ?: price ?: startingBid
     )
 }
 
